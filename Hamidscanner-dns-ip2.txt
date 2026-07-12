@@ -9,7 +9,7 @@ BLUE="\033[1;34m";MAGENTA="\033[1;35m";CYAN="\033[1;36m";RESET="\033[0m"
 echo -e "${C}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Z}"
 echo -e "${C} Hamid MultiScanner™ Menu ${Z}"
 echo -e "${C}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Z}"
-echo "1) IP Scan"
+echo "1) IP Scan (UltraFast)"
 echo "2) DNS Speed Test"
 echo "0) Exit"
 read -p "Choice: " choice
@@ -17,28 +17,23 @@ read -p "Choice: " choice
 case $choice in
   1)
     ########################################
-    # IP Scan (Stable Version)
+    # IP Scan UltraFast
     ########################################
-    RESULTS=()
     Y=0
     TOTAL=1500
-    echo -e "\n${C}🌐 HamidScanner™ ($TOTAL IPs, Stable Mode)${Z}\n"
+    MAXJOBS=10   # تعداد پردازش‌های همزمان (ایده‌آل برای گوشی)
     TMP=$(mktemp)
 
-    scan_ip() {
-      local id=$1
-      local ip=$2
+    echo -e "\n${C}🚀 HamidScanner™ UltraFast Mode ($TOTAL IPs)${Z}\n"
 
-      # خروجی پینگ کم و کنترل‌شده
+    scan_ip() {
+      local ip=$1
       P=$(ping -c1 -W1 "$ip" 2>/dev/null | grep time=)
       M=$(echo "$P" | awk -F'time=' '{print $2}' | awk '{print $1}')
-
-      if [[ -n "$M" ]]; then
-        echo "$M $ip" >> "$TMP"
-      fi
+      [[ -n "$M" ]] && echo "$M $ip" >> "$TMP"
     }
 
-    while(( Y<TOTAL ));do
+    while (( Y < TOTAL )); do
       ((Y++))
 
       case $((RANDOM%6)) in
@@ -50,18 +45,18 @@ case $choice in
         5)H="172.68.$((RANDOM%256)).$((RANDOM%256))";;
       esac
 
-      # خروجی کم‌حجم
+      # نمایش پیشرفت هر 100 آی‌پی
       if (( Y % 100 == 0 )); then
         PERCENT=$(( Y*100/TOTAL ))
         echo -e "${A}Progress: $Y/$TOTAL ($PERCENT%)${Z}"
       fi
 
-      scan_ip "$Y" "$H" &
+      scan_ip "$H" &
 
-      # کنترل تعداد پردازش‌ها
-      if (( Y % 20 == 0 )); then
-        wait
-      fi
+      # کنترل تعداد jobهای همزمان
+      while (( $(jobs -r | wc -l) >= MAXJOBS )); do
+        sleep 0.05
+      done
     done
 
     wait
@@ -79,7 +74,7 @@ case $choice in
       H=$(echo $line | awk '{print $2}')
       echo -e "${A}✅ $H → ${M}ms${Z}"
     done <<< "$BEST"
-    echo -e "${C}📦 HamidScanner™${Z}"
+    echo -e "${C}📦 HamidScanner™ UltraFast${Z}"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
     rm -f "$TMP"
@@ -95,7 +90,7 @@ case $choice in
     echo "╚════════════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${RESET}"
 
-    echo -e "${YELLOW}Fetching public DNS list from public-dns.info...${RESET}"
+    echo -e "${YELLOW}Fetching public DNS list...${RESET}"
     curl -s https://public-dns.info/nameservers.csv -o d.tmp
     X=$(awk -F, 'NR>1{print $1}' d.tmp | head -n 100)
     declare -A T
@@ -142,7 +137,7 @@ case $choice in
     done
 
     echo -e "$FINAL_LIST" > best-dns.conf
-    echo -e "\n${BLUE}Saved fastest DNS servers (with pairs) to best-dns.conf${RESET}"
+    echo -e "\n${BLUE}Saved fastest DNS servers to best-dns.conf${RESET}"
     ;;
 
   0)
