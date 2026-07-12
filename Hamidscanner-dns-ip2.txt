@@ -1,61 +1,36 @@
-#!/data/data/com.termux/files/usr/bin/bash
+MAXJOBS=3   # تعداد پردازش‌های همزمان (ایمن برای همه گوشی‌ها)
 
-A='\033[0;32m';C='\033[1;34m';Z='\033[0m'
-echo -e "${C}🚀 HamidScanner UltraTurbo™ (SafeMode AutoInstaller)${Z}"
-
-########################################
-# 1) Auto Install fping
-########################################
-if ! command -v fping >/dev/null 2>&1; then
-  echo -e "${A}📦 Installing fping...${Z}"
-  pkg update -y >/dev/null 2>&1
-  pkg install fping -y >/dev/null 2>&1
-  echo -e "${A}✔ fping installed${Z}"
-fi
-
-########################################
-# 2) Generate IP List
-########################################
-TOTAL=1500
-echo -e "${A}🧩 Generating $TOTAL IPs...${Z}"
-
-generate_ips() {
-  for ((i=0;i<TOTAL;i++)); do
-    case $((RANDOM%6)) in
-      0)echo "172.65.$((RANDOM%256)).$((RANDOM%256))";;
-      1)echo "162.159.$((RANDOM%256)).$((RANDOM%256))";;
-      2)echo "104.18.$((RANDOM%256)).$((RANDOM%256))";;
-      3)echo "104.26.$((RANDOM%256)).$((RANDOM%256))";;
-      4)echo "172.67.$((RANDOM%256)).$((RANDOM%256))";;
-      5)echo "172.68.$((RANDOM%256)).$((RANDOM%256))";;
-    esac
-  done
+scan_ip() {
+  local id=$1
+  local ip=$2
+  P=$(ping -c1 -W1 "$ip" 2>/dev/null | grep time=)
+  M=$(echo "$P" | awk -F'time=' '{print $2}' | awk '{print $1}')
+  [[ -n "$M" ]] && echo "$M $ip" >> "$TMP"
 }
 
-generate_ips > iplist.txt
+while(( Y<TOTAL ));do
+  ((Y++))
 
-########################################
-# 3) UltraTurbo Scan (SafeMode)
-########################################
-echo -e "${A}⚡ Starting UltraTurbo Scan...${Z}"
+  case $((RANDOM%6)) in
+    0)H="172.65.$((RANDOM%256)).$((RANDOM%256))";;
+    1)H="162.159.$((RANDOM%256)).$((RANDOM%256))";;
+    2)H="104.18.$((RANDOM%256)).$((RANDOM%256))";;
+    3)H="104.26.$((RANDOM%256)).$((RANDOM%256))";;
+    4)H="172.67.$((RANDOM%256)).$((RANDOM%256))";;
+    5)H="172.68.$((RANDOM%256)).$((RANDOM%256))";;
+  esac
 
-TMP=$(mktemp)
+  if (( Y % 100 == 0 )); then
+    PERCENT=$(( Y*100/TOTAL ))
+    echo -e "${A}Progress: $Y/$TOTAL ($PERCENT%)${Z}"
+  fi
 
-# اجرای fping با خروجی سازگار با همه نسخه‌ها
-fping -c1 -t100 -q -f iplist.txt 2>&1 | \
-grep 'min/avg/max' | awk '{print $1, $5}' | sed 's/ms//' > "$TMP"
+  scan_ip "$Y" "$H" &
 
-########################################
-# 4) Show Best Results
-########################################
-echo -e "${C}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Z}"
-echo -e "${A}🎯 Best 5 Results:${Z}"
-
-sort -k2 -n "$TMP" | head -n 5 | while read ip ms; do
-  echo -e "${A}✔ $ip → ${ms}ms${Z}"
+  # کنترل تعداد jobهای همزمان
+  while (( $(jobs -r | wc -l) >= MAXJOBS )); do
+    sleep 0.05
+  done
 done
 
-echo -e "${C}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Z}"
-echo -e "${A}Made by Hamid @hamid2rap${Z}"
-
-rm -f "$TMP"
+wait
