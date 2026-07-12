@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 A='\033[0;32m';C='\033[1;34m';Z='\033[0m'
-echo -e "${C}🚀 HamidScanner UltraTurbo™ (AutoInstaller)${Z}"
+echo -e "${C}🚀 HamidScanner UltraTurbo™ (SafeMode AutoInstaller)${Z}"
 
 ########################################
 # 1) Auto Install fping
@@ -35,15 +35,15 @@ generate_ips() {
 generate_ips > iplist.txt
 
 ########################################
-# 3) UltraTurbo Scan
+# 3) UltraTurbo Scan (SafeMode)
 ########################################
 echo -e "${A}⚡ Starting UltraTurbo Scan...${Z}"
 
 TMP=$(mktemp)
 
-# اجرای fping با سرعت بسیار بالا
+# اجرای fping با خروجی سازگار با همه نسخه‌ها
 fping -c1 -t100 -q -f iplist.txt 2>&1 | \
-grep 'avg' | awk '{print $1, $8}' | sed 's/ms,//' > "$TMP"
+grep 'min/avg/max' | awk '{print $1, $5}' | sed 's/ms//' > "$TMP"
 
 ########################################
 # 4) Show Best Results
