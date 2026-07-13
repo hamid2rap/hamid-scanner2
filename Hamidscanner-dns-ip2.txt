@@ -21,19 +21,25 @@ if [[ "$OPT" == "2" ]]; then
 
     DNS_URL="https://public-dns.info/nameservers.txt"
 
-    # Download ONLY first 1000 DNS (super fast, no crash)
-    DNS_LIST=$(curl -A "Mozilla/5.0" -fsSL "$DNS_URL" | head -n 1000)
+    # Save DNS list to a temp file (prevents curl error 23)
+    DNS_FILE=$(mktemp)
 
-    if [[ -z "$DNS_LIST" ]]; then
+    curl -A "Mozilla/5.0" -fsSL "$DNS_URL" -o "$DNS_FILE"
+
+    if [[ ! -s "$DNS_FILE" ]]; then
         echo -e "${RED}Failed to fetch DNS list.${RESET}"
         exit 1
     fi
 
+    # Read ONLY first 1000 DNS lines
     DNS_ARRAY=()
+    COUNT=0
     while read -r line; do
         [[ -z "$line" ]] && continue
         DNS_ARRAY+=("$line")
-    done <<< "$DNS_LIST"
+        COUNT=$((COUNT + 1))
+        [[ $COUNT -ge 1000 ]] && break
+    done < "$DNS_FILE"
 
     TOTAL=${#DNS_ARRAY[@]}
     DONE=0
