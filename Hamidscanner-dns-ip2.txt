@@ -19,10 +19,9 @@ if [[ "$OPT" == "2" ]]; then
     echo
     echo -e "${CYAN}Fetching 1000 DNS from public-dns.info...${RESET}"
 
-    # Public DNS (always online, no 404)
     DNS_URL="https://public-dns.info/nameservers.txt"
 
-    # Download ONLY first 1000 lines (super fast)
+    # Download ONLY first 1000 DNS (super fast, no crash)
     DNS_LIST=$(curl -A "Mozilla/5.0" -fsSL "$DNS_URL" | head -n 1000)
 
     if [[ -z "$DNS_LIST" ]]; then
