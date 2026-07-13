@@ -2,9 +2,9 @@
 
 CYAN="\e[36m"; GREEN="\e[32m"; RESET="\e[0m"
 
-echo -e "${CYAN}=== HAMID Ultra-Fast Cloudflare Range Scanner ===${RESET}"
+echo -e "${CYAN}=== HAMID Cloudflare FAST Scanner (100 IP per range) ===${RESET}"
 
-# فقط رنج‌های کلودفلر
+# رنج‌های کلودفلر
 RANGES=(
     "104.16.0.0 104.23.255.255"
     "104.24.0.0 104.27.255.255"
@@ -27,42 +27,33 @@ num2ip() {
 
 OUT=$(mktemp)
 
-TOTAL=0
-for RANGE in "${RANGES[@]}"; do
-    read S E <<< "$RANGE"
-    S=$(ip2num "$S")
-    E=$(ip2num "$E")
-    TOTAL=$((TOTAL + ( (E-S)/256 )))
-done
-
-DONE=0
-
-echo -e "${CYAN}Scanning Cloudflare ranges...${RESET}"
+echo -e "${CYAN}Scanning Cloudflare ranges (100 IP per range)...${RESET}"
 
 scan_ip() {
     IP=$1
     PING=$(ping -c 1 -W 1 "$IP" 2>/dev/null | awk -F'=' '/time=/ {print $4}' | cut -d' ' -f1)
     [[ -n "$PING" ]] && echo "$IP $PING" >> "$OUT"
-
-    DONE=$((DONE + 1))
-    PERCENT=$((DONE * 100 / TOTAL))
-    printf "${GREEN}Progress: %d%%%s\r" "$PERCENT" "$RESET"
 }
 
 export -f scan_ip
-export OUT DONE TOTAL
+export OUT
 
 for RANGE in "${RANGES[@]}"; do
     read START END <<< "$RANGE"
     S=$(ip2num "$START")
     E=$(ip2num "$END")
 
-    echo -e "${CYAN}Range: $START → $END${RESET}"
+    TOTAL_RANGE=$((E - S))
+    STEP=$((TOTAL_RANGE / 100))   # فقط ۱۰۰ آی‌پی از هر رنج
 
-    for ((IP=S; IP<=E; IP+=256)); do
-        TARGET=$(num2ip "$IP")
+    echo -e "${GREEN}Range: $START → $END${RESET}"
+
+    for ((i=0; i<100; i++)); do
+        IP_NUM=$((S + STEP * i))
+        TARGET=$(num2ip "$IP_NUM")
         echo "$TARGET"
     done
+
 done | xargs -n1 -P40 bash -c 'scan_ip "$@"' _
 
 echo
