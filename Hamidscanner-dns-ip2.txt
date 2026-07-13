@@ -19,7 +19,9 @@ if [[ "$OPT" == "2" ]]; then
     echo
     echo -e "${CYAN}Fetching DNS list from public repository...${RESET}"
 
+    # Public DNS repository (built-in)
     DNS_URL="https://raw.githubusercontent.com/proxifly/public-dns/master/resolvers.txt"
+
     DNS_LIST=$(curl -fsSL "$DNS_URL")
 
     if [[ -z "$DNS_LIST" ]]; then
