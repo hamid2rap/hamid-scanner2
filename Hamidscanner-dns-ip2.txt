@@ -2,24 +2,24 @@
 
 RED="\e[31m"; GREEN="\e[32m"; YELLOW="\e[33m"; BLUE="\e[34m"; CYAN="\e[36m"; RESET="\e[0m"
 
-echo -e "${CYAN}=== HAMID Cloudflare Scanner (Direct Mode) ===${RESET}"
+echo -e "${CYAN}=== HAMID Cloudflare & DNS Scanner ===${RESET}"
 echo -e "${YELLOW}Fast scanning + progress percentage (compatible with bash <(curl ...))${RESET}"
 echo
 
 echo -e "${BLUE}1) Scan Cloudflare IP ranges"
-echo -e "2) Fetch & scan DNS list from URL"
+echo -e "2) Scan DNS servers from public repository"
 echo -e "3) Exit${RESET}"
 echo
 read -p "Select option: " OPT
 
 ############################################
-# OPTION 2 — DNS SCANNER
+# OPTION 2 — DNS SCANNER (PUBLIC REPO)
 ############################################
 if [[ "$OPT" == "2" ]]; then
     echo
-    read -p "Enter DNS list URL: " DNS_URL
+    echo -e "${CYAN}Fetching DNS list from public repository...${RESET}"
 
-    echo -e "${CYAN}Fetching DNS list...${RESET}"
+    DNS_URL="https://raw.githubusercontent.com/proxifly/public-dns/master/resolvers.txt"
     DNS_LIST=$(curl -fsSL "$DNS_URL")
 
     if [[ -z "$DNS_LIST" ]]; then
@@ -61,10 +61,8 @@ if [[ "$OPT" == "2" ]]; then
     echo -e "${GREEN}Selecting top 10 DNS servers...${RESET}"
     echo
 
-    # Sort by ping
     BEST=$(sort -k2 -n "$OUT_DNS" | head -n 10)
 
-    # Pair DNS (1.1.1.1 + 1.0.0.1)
     declare -A PAIRS
 
     while read -r DNS PING; do
@@ -84,7 +82,7 @@ if [[ "$OPT" == "2" ]]; then
 fi
 
 ############################################
-# OPTION 1 — ORIGINAL CLOUDFLARE SCANNER
+# OPTION 1 — CLOUDFLARE SCANNER
 ############################################
 
 if [[ "$OPT" == "1" ]]; then
