@@ -1,81 +1,94 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-TOTAL=2000
-RESULTS="$(mktemp)"
-COUNT=0
+# ============================
+#      HAMID Warp Scanner
+# ============================
 
-# تعداد پینگ‌های همزمان
-PARALLEL=40
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+BLUE="\e[34m"
+MAGENTA="\e[35m"
+CYAN="\e[36m"
+RESET="\e[0m"
 
-RANGES=(
-  "104.16.0.0/12"
-  "104.24.0.0/14"
-  "172.64.0.0/13"
-  "141.101.64.0/18"
-  "188.114.96.0/20"
-  "190.93.240.0/20"
-  "198.41.128.0/17"
-  "103.21.244.0/22"
-  "103.22.200.0/22"
-  "103.31.4.0/22"
-)
-
-cidr_random_ip() {
-  local cidr="$1"
-  local base="${cidr%/*}"
-  local prefix="${cidr#*/}"
-
-  IFS='.' read -r o1 o2 o3 o4 <<< "$base"
-  local ip_num=$(( (o1<<24) + (o2<<16) + (o3<<8) + o4 ))
-
-  local host_bits=$((32 - prefix))
-  local block_size=$((1 << host_bits))
-
-  local offset=$(( RANDOM % block_size ))
-  local cur=$(( ip_num + offset ))
-
-  printf "%d.%d.%d.%d\n" \
-    $(( (cur>>24)&255 )) \
-    $(( (cur>>16)&255 )) \
-    $(( (cur>>8)&255 )) \
-    $(( cur&255 ))
+banner() {
+    echo -e "${MAGENTA}"
+    echo "██╗  ██╗ █████╗ ███╗   ███╗██╗██╗██████╗ "
+    echo "██║  ██║██╔══██╗████╗ ████║██║██║██╔══██╗"
+    echo "███████║███████║██╔████╔██║██║██║██║  ██║"
+    echo "██╔══██║██╔══██║██║╚██╔╝██║██║██║██║  ██║"
+    echo "██║  ██║██║  ██║██║ ╚═╝ ██║██║██║██████╔╝"
+    echo "╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝╚═════╝ "
+    echo -e "${CYAN}           HAMID Warp Scanner${RESET}"
+    echo
 }
 
-run_ping() {
-  local ip="$1"
-  ping_out=$(ping -c 1 -W 1 "$ip" 2>/dev/null)
-  if [[ $? -eq 0 ]]; then
-    avg=$(echo "$ping_out" | awk -F'/' '/rtt/ {print $5}')
-    [[ -n "$avg" ]] && echo "$avg $ip" >> "$RESULTS"
-  fi
+menu() {
+    echo -e "${BLUE}1) اجرای اسکن سریع"
+    echo -e "2) اجرای اسکن معمولی"
+    echo -e "3) اجرای اسکن عمیق"
+    echo -e "4) اجرای اسکن سفارشی"
+    echo -e "5) خروج${RESET}"
+    echo
+    echo -ne "${YELLOW}گزینه را انتخاب کن: ${RESET}"
+    read CH
 }
 
-echo "[*] شروع تست فوق‌سریع ۲۰۰۰ آی‌پی..."
-echo
+banner
 
-while (( COUNT < TOTAL )); do
-  for ((i=0; i<PARALLEL && COUNT<TOTAL; i++)); do
-    range="${RANGES[$RANDOM % ${#RANGES[@]}]}"
-    ip=$(cidr_random_ip "$range")
-
-    run_ping "$ip" &
-
-    COUNT=$((COUNT+1))
-    PERCENT=$(( COUNT * 100 / TOTAL ))
-    echo -ne "درصد پیشرفت: $PERCENT% \r"
-  done
-
-  wait
-done
-
-echo
-echo "[*] انتخاب ۱۰ آی‌پی برتر..."
-echo
-
-if [[ -s "$RESULTS" ]]; then
-  sort -n "$RESULTS" | head -n 10 | awk '{print "IP: "$2"   RTT: "$1" ms"}'
-else
-  echo "[!] هیچ آی‌پی سالم پیدا نشد."
+OS=$(uname -s)
+if [ "$OS" != "Linux" ]; then
+    echo -e "${RED}این اسکریپت فقط روی Linux/Android اجرا می‌شود.${RESET}"
+    exit 1
 fi
 
-rm -f "$RESULTS"
+ARCH=$(uname -m)
+case "$ARCH" in
+    aarch64|arm64) ARCH="arm64" ;;
+    armv7*|armv8*) ARCH="arm" ;;
+    x86_64)        ARCH="amd64" ;;
+    i386|i686)     ARCH="386" ;;
+    *)             echo -e "${RED}معماری پشتیبانی نمی‌شود: ${ARCH}${RESET}" && exit 1 ;;
+esac
+
+BINARY="BPB-Warp-Scanner"
+ARCHIVE="${BINARY}-linux-${ARCH}.tar.gz"
+LATEST_VERSION=$(curl -fsSL https://raw.githubusercontent.com/bia-pain-bache/BPB-Warp-Scanner/main/VERSION)
+
+menu
+
+case "$CH" in
+    1) MODE="100" ;;
+    2) MODE="1000" ;;
+    3) MODE="10000" ;;
+    4)
+        echo -ne "${CYAN}چند endpoint؟ ${RESET}"
+        read MODE
+        ;;
+    5)
+        echo -e "${RED}خروج...${RESET}"
+        exit 0
+        ;;
+    *)
+        echo -e "${RED}گزینه نامعتبر!${RESET}"
+        exit 1
+        ;;
+esac
+
+if [ ! -x "./${BINARY}" ]; then
+    echo -e "${YELLOW}اسکنر پیدا نشد، در حال نصب...${RESET}"
+    curl -L -# -o "${ARCHIVE}" \
+        "https://github.com/bia-pain-bache/BPB-Warp-Scanner/releases/latest/download/${ARCHIVE}"
+    tar xzf "./${ARCHIVE}"
+fi
+
+echo -e "${GREEN}در حال اجرای HAMID Warp Scanner...${RESET}"
+echo -e "${BLUE}Mode: ${MODE} endpoints${RESET}"
+echo
+
+# اجرای اسکنر بدون نمایش خروجی BPB
+OUTPUT=$("./${BINARY}" --scan "${MODE}" 2>/dev/null | sed '/BPB/d')
+
+echo -e "${CYAN}نتیجه اسکن:${RESET}"
+echo -e "${GREEN}${OUTPUT}${RESET}"
