@@ -17,10 +17,10 @@ read -p "Select option: " OPT
 ############################################
 if [[ "$OPT" == "2" ]]; then
     echo
-    echo -e "${CYAN}Fetching DNS list (first 1000 only)...${RESET}"
+    echo -e "${CYAN}Fetching fast DNS list (1000 entries)...${RESET}"
 
-    # FAST public DNS repository
-    DNS_URL="https://public-dns.info/nameservers.txt"
+    # FAST DNS repository (1000 DNS only)
+    DNS_URL="https://raw.githubusercontent.com/trickest/public-dns/master/public-dns.txt"
 
     DNS_LIST=$(curl -fsSL "$DNS_URL")
 
@@ -29,7 +29,7 @@ if [[ "$OPT" == "2" ]]; then
         exit 1
     fi
 
-    # Load only first 1000 DNS entries
+    # Load DNS directly (file already ~1000 lines)
     DNS_ARRAY=()
     COUNT=0
     while read -r line; do
