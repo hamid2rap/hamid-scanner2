@@ -19,8 +19,8 @@ if [[ "$OPT" == "2" ]]; then
     echo
     echo -e "${CYAN}Fetching fast DNS list (1000 entries)...${RESET}"
 
-    # Stable DNS repository (always full)
-    DNS_URL="https://raw.githubusercontent.com/zevtyardt/lite-dns/main/dns.txt"
+    # Stable DNS repository (always full, no 404)
+    DNS_URL="https://raw.githubusercontent.com/BonJarber/freshdns/main/resolvers.txt"
 
     DNS_LIST=$(curl -A "Mozilla/5.0" -fsSL "$DNS_URL")
 
