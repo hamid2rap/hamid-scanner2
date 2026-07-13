@@ -1,1 +1,57 @@
+#!/bin/bash
 
+# Colors
+RED="\e[31m"; GREEN="\e[32m"; YELLOW="\e[33m"; BLUE="\e[34m"; CYAN="\e[36m"; RESET="\e[0m"
+
+echo -e "${CYAN}=== HAMID Cloudflare Scanner ===${RESET}"
+echo -e "${YELLOW}اسکن ۷ رنج کلودفلر و انتخاب ۱۰ آی‌پی برتر...${RESET}"
+echo
+
+# 7 Cloudflare ranges
+RANGES=(
+"104.16.0.0/13"
+"104.24.0.0/14"
+"172.64.0.0/13"
+"162.158.0.0/15"
+"198.41.128.0/17"
+"188.114.96.0/20"
+"190.93.240.0/20"
+)
+
+# Convert CIDR to IP list
+cidr_to_ips() {
+    ipcalc -n "$1" | awk '/Network/ {print $2}' | while IFS=. read -r o1 o2 o3 o4; do
+        mask=$(echo "$1" | cut -d/ -f2)
+        count=$((2**(32-mask)))
+        for ((i=1; i<count-1; i++)); do
+            echo "$o1.$o2.$o3.$((o4+i))"
+        done
+    done
+}
+
+# Temp file
+TMP="/tmp/hamid_cf_scan.txt"
+> "$TMP"
+
+# Scan all ranges
+for RANGE in "${RANGES[@]}"; do
+    echo -e "${BLUE}در حال اسکن رنج: ${RANGE}${RESET}"
+    for IP in $(cidr_to_ips "$RANGE"); do
+        PING=$(ping -c 1 -W 1 "$IP" 2>/dev/null | awk -F'=' '/time=/ {print $4}' | cut -d' ' -f1)
+        if [[ -n "$PING" ]]; then
+            echo "$IP $PING" >> "$TMP"
+        fi
+    done
+done
+
+echo
+echo -e "${GREEN}در حال انتخاب ۱۰ آی‌پی برتر...${RESET}"
+echo
+
+# Sort by ping and show top 10
+sort -k2 -n "$TMP" | head -n 10 | nl | while read n ip ping; do
+    echo -e "${CYAN}$n) ${GREEN}$ip${RESET}  →  ${YELLOW}${ping} ms${RESET}"
+done
+
+echo
+echo -e "${MAGENTA}اسکن تمام شد — HAMID Cloudflare Scanner${RESET}"
