@@ -2,24 +2,24 @@
 
 RED="\e[31m"; GREEN="\e[32m"; YELLOW="\e[33m"; BLUE="\e[34m"; CYAN="\e[36m"; RESET="\e[0m"
 
-echo -e "${CYAN}=== HAMID Cloudflare & DNS Scanner ===${RESET}"
-echo -e "${YELLOW}Fast scanning + progress percentage (compatible with bash <(curl ...))${RESET}"
+echo -e "${CYAN}=== HAMID Cloudflare & DNS Turbo Scanner ===${RESET}"
+echo -e "${YELLOW}Fast scanning + progress percentage (Termux compatible)${RESET}"
 echo
 
 echo -e "${BLUE}1) Scan Cloudflare IP ranges"
-echo -e "2) Scan DNS servers from public DNS repository"
+echo -e "2) Turbo DNS scan (first 1000 DNS from public repository)"
 echo -e "3) Exit${RESET}"
 echo
 read -p "Select option: " OPT
 
 ############################################
-# OPTION 2 — DNS SCANNER (PUBLIC DNS.INFO)
+# OPTION 2 — TURBO DNS SCANNER (1000 DNS)
 ############################################
 if [[ "$OPT" == "2" ]]; then
     echo
-    echo -e "${CYAN}Fetching DNS list from public-dns.info...${RESET}"
+    echo -e "${CYAN}Fetching DNS list (first 1000 only)...${RESET}"
 
-    # Built-in public DNS repository
+    # FAST public DNS repository
     DNS_URL="https://public-dns.info/nameservers.txt"
 
     DNS_LIST=$(curl -fsSL "$DNS_URL")
@@ -29,10 +29,14 @@ if [[ "$OPT" == "2" ]]; then
         exit 1
     fi
 
+    # Load only first 1000 DNS entries
     DNS_ARRAY=()
+    COUNT=0
     while read -r line; do
         [[ -z "$line" ]] && continue
         DNS_ARRAY+=("$line")
+        COUNT=$((COUNT + 1))
+        [[ $COUNT -ge 1000 ]] && break
     done <<< "$DNS_LIST"
 
     TOTAL=${#DNS_ARRAY[@]}
@@ -57,7 +61,8 @@ if [[ "$OPT" == "2" ]]; then
     export -f scan_dns
     export OUT_DNS DONE TOTAL
 
-    printf "%s\n" "${DNS_ARRAY[@]}" | xargs -n1 -P30 bash -c 'scan_dns "$@"' _
+    # 40 threads = FAST & stable for Termux
+    printf "%s\n" "${DNS_ARRAY[@]}" | xargs -n1 -P40 bash -c 'scan_dns "$@"' _
 
     echo
     echo -e "${GREEN}Selecting top 10 DNS servers...${RESET}"
@@ -79,7 +84,7 @@ if [[ "$OPT" == "2" ]]; then
     done
 
     echo
-    echo -e "${MAGENTA}DNS scan complete — HAMID Scanner${RESET}"
+    echo -e "${MAGENTA}DNS Turbo scan complete — HAMID Scanner${RESET}"
     exit 0
 fi
 
@@ -121,7 +126,7 @@ done
 
 DONE=0
 
-echo -e "${BLUE}Scanning...${RESET}"
+echo -e "${BLUE}Scanning Cloudflare ranges...${RESET}"
 
 for RANGE in "${RANGES[@]}"; do
     read START END <<< "$RANGE"
@@ -151,7 +156,7 @@ done
 wait
 
 echo
-echo -e "${GREEN}Selecting top 10 IPs...${RESET}"
+echo -e "${GREEN}Selecting top 10 Cloudflare IPs...${RESET}"
 echo
 
 sort -k2 -n "$OUT" | head -n 10 | nl | while read n ip ping; do
@@ -159,7 +164,7 @@ sort -k2 -n "$OUT" | head -n 10 | nl | while read n ip ping; do
 done
 
 echo
-echo -e "${MAGENTA}Scan complete — HAMID Cloudflare Scanner${RESET}"
+echo -e "${MAGENTA}Cloudflare scan complete — HAMID Scanner${RESET}"
 
 fi
 
