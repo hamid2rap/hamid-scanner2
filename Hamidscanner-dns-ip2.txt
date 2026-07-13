@@ -7,20 +7,20 @@ echo -e "${YELLOW}Fast scanning + progress percentage (compatible with bash <(cu
 echo
 
 echo -e "${BLUE}1) Scan Cloudflare IP ranges"
-echo -e "2) Scan DNS servers from public repository"
+echo -e "2) Scan DNS servers from public DNS repository"
 echo -e "3) Exit${RESET}"
 echo
 read -p "Select option: " OPT
 
 ############################################
-# OPTION 2 — DNS SCANNER (PUBLIC REPO)
+# OPTION 2 — DNS SCANNER (PUBLIC DNS.INFO)
 ############################################
 if [[ "$OPT" == "2" ]]; then
     echo
-    echo -e "${CYAN}Fetching DNS list from public repository...${RESET}"
+    echo -e "${CYAN}Fetching DNS list from public-dns.info...${RESET}"
 
-    # Public DNS repository (built-in)
-    DNS_URL="https://raw.githubusercontent.com/proxifly/public-dns/master/resolvers.txt"
+    # Built-in public DNS repository
+    DNS_URL="https://public-dns.info/nameservers.txt"
 
     DNS_LIST=$(curl -fsSL "$DNS_URL")
 
