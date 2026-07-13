@@ -3,7 +3,7 @@
 RED="\e[31m"; GREEN="\e[32m"; YELLOW="\e[33m"; BLUE="\e[34m"; CYAN="\e[36m"; RESET="\e[0m"
 
 echo -e "${CYAN}=== HAMID Cloudflare Scanner (Direct Mode) ===${RESET}"
-echo -e "${YELLOW}اسکن سریع + درصد پیشرفت (سازگار با bash <(curl ...))${RESET}"
+echo -e "${YELLOW}Fast scanning + progress percentage (compatible with bash <(curl ...))${RESET}"
 echo
 
 RANGES=(
@@ -38,14 +38,14 @@ done
 
 DONE=0
 
-echo -e "${BLUE}در حال اسکن...${RESET}"
+echo -e "${BLUE}Scanning...${RESET}"
 
 for RANGE in "${RANGES[@]}"; do
     read START END <<< "$RANGE"
     S=$(ip2num "$START")
     E=$(ip2num "$END")
 
-    echo -e "${CYAN}رنج: $START → $END${RESET}"
+    echo -e "${CYAN}Range: $START → $END${RESET}"
 
     for ((IP=S; IP<=E; IP+=256)); do
         TARGET=$(num2ip "$IP")
@@ -61,14 +61,14 @@ for RANGE in "${RANGES[@]}"; do
         DONE=$((DONE + 1))
         PERCENT=$((DONE * 100 / TOTAL))
 
-        printf "${GREEN}پیشرفت: %d%%%s\r" "$PERCENT" "$RESET"
+        printf "${GREEN}Progress: %d%%%s\r" "$PERCENT" "$RESET"
     done
 done
 
 wait
 
 echo
-echo -e "${GREEN}در حال انتخاب ۱۰ آی‌پی برتر...${RESET}"
+echo -e "${GREEN}Selecting top 10 IPs...${RESET}"
 echo
 
 sort -k2 -n "$OUT" | head -n 10 | nl | while read n ip ping; do
@@ -76,4 +76,4 @@ sort -k2 -n "$OUT" | head -n 10 | nl | while read n ip ping; do
 done
 
 echo
-echo -e "${MAGENTA}اسکن تمام شد — HAMID Cloudflare Scanner${RESET}"
+echo -e "${MAGENTA}Scan complete — HAMID Cloudflare Scanner${RESET}"
