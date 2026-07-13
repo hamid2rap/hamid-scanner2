@@ -1,45 +1,57 @@
 #!/bin/bash
 
-# Colors
 RED="\e[31m"; GREEN="\e[32m"; YELLOW="\e[33m"; BLUE="\e[34m"; CYAN="\e[36m"; RESET="\e[0m"
 
 echo -e "${CYAN}=== HAMID Cloudflare Scanner ===${RESET}"
 echo -e "${YELLOW}اسکن ۷ رنج کلودفلر و انتخاب ۱۰ آی‌پی برتر...${RESET}"
 echo
 
-# 7 Cloudflare ranges
+# 7 Cloudflare ranges (start-end)
 RANGES=(
-"104.16.0.0/13"
-"104.24.0.0/14"
-"172.64.0.0/13"
-"162.158.0.0/15"
-"198.41.128.0/17"
-"188.114.96.0/20"
-"190.93.240.0/20"
+"104.16.0.0 104.23.255.255"
+"104.24.0.0 104.27.255.255"
+"172.64.0.0 172.71.255.255"
+"162.158.0.0 162.159.255.255"
+"198.41.128.0 198.41.255.255"
+"188.114.96.0 188.114.111.255"
+"190.93.240.0 190.93.255.255"
 )
 
-# Convert CIDR to IP list
-cidr_to_ips() {
-    ipcalc -n "$1" | awk '/Network/ {print $2}' | while IFS=. read -r o1 o2 o3 o4; do
-        mask=$(echo "$1" | cut -d/ -f2)
-        count=$((2**(32-mask)))
-        for ((i=1; i<count-1; i++)); do
-            echo "$o1.$o2.$o3.$((o4+i))"
-        done
-    done
+# Convert IP to number
+ip2num() {
+    IFS=. read -r a b c d <<< "$1"
+    echo $((a*256**3 + b*256**2 + c*256 + d))
 }
 
-# Temp file
-TMP="/tmp/hamid_cf_scan.txt"
-> "$TMP"
+# Convert number to IP
+num2ip() {
+    local ip=$1
+    echo "$((ip/256**3)).$((ip/256**2%256)).$((ip/256%256)).$((ip%256))"
+}
 
-# Scan all ranges
+# Output file (local dir, safe)
+OUT="hamid_cf_scan.txt"
+> "$OUT"
+
+echo -e "${BLUE}در حال اسکن...${RESET}"
+
 for RANGE in "${RANGES[@]}"; do
-    echo -e "${BLUE}در حال اسکن رنج: ${RANGE}${RESET}"
-    for IP in $(cidr_to_ips "$RANGE"); do
-        PING=$(ping -c 1 -W 1 "$IP" 2>/dev/null | awk -F'=' '/time=/ {print $4}' | cut -d' ' -f1)
-        if [[ -n "$PING" ]]; then
-            echo "$IP $PING" >> "$TMP"
+    read START END <<< "$RANGE"
+    S=$(ip2num "$START")
+    E=$(ip2num "$END")
+
+    echo -e "${CYAN}رنج: $START → $END${RESET}"
+
+    # نمونه‌گیری سریع: هر 256 آی‌پی یکبار
+    for ((IP=S; IP<=E; IP+=256)); do
+        TARGET=$(num2ip "$IP")
+
+        ping -c 1 -W 1 "$TARGET" >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            PING=$(ping -c 1 -W 1 "$TARGET" 2>/dev/null | awk -F'=' '/time=/ {print $4}' | cut -d' ' -f1)
+            if [[ -n "$PING" ]]; then
+                echo "$TARGET $PING" >> "$OUT"
+            fi
         fi
     done
 done
@@ -48,8 +60,7 @@ echo
 echo -e "${GREEN}در حال انتخاب ۱۰ آی‌پی برتر...${RESET}"
 echo
 
-# Sort by ping and show top 10
-sort -k2 -n "$TMP" | head -n 10 | nl | while read n ip ping; do
+sort -k2 -n "$OUT" | head -n 10 | nl | while read n ip ping; do
     echo -e "${CYAN}$n) ${GREEN}$ip${RESET}  →  ${YELLOW}${ping} ms${RESET}"
 done
 
